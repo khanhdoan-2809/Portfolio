@@ -1,0 +1,26 @@
+<div class="project mt-2 mx-2">
+  <div class="project__intro">
+    <div class="project__title">
+      {{project.name}}</div>
+    <div class="logo__img my-1">
+      <ng-container *ngFor="let logo of project.logo">
+        <img src="{{logo}}" alt="">
+      </ng-container>
+    </div>
+  </div>
+  <div class="project__detail m-1">
+    <div class="project__detail__intro">
+      <strong>{{project.type}}: </strong>
+      {{project.content}}
+    </div>
+    <div class="project__detail__tech">
+      <strong><a target="_blank" href="{{project.source_1}}"><i class="fab fa-github"></i> Source
+        <span *ngIf="project.source_2!==''; else elseNumber">1</span>
+        <ng-template #elseNumber></ng-template>
+       </a></strong>
+      <strong>
+        <ng-template [ngIf]="project.source_2!==''"><a target="_blank" href="{{project.source_2}}"> Source 2</a></ng-template>
+      </strong>
+    </div>
+  </div>
+</div>
