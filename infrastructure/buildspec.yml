@@ -9,7 +9,9 @@ phases:
     commands:
       - echo Install Angular CLI and all node_modules 
       - cd $CODEBUILD_SRC_DIR/src
-      - npm install && npm install -g @angular/cli
+      - npm install
+      - npm install --save-dev @angular/cli@latest
+      - npm install -g @angular/cli
   build:
     commands:
       - echo Build process started now
