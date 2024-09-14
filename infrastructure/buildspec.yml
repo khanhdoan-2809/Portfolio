@@ -18,7 +18,7 @@ phases:
   post_build:
     commands:
       - echo Build process finished, upload artifacts to S3 bucket
-      - cd dist/app-for-aws
+      - cd dist/protofile
       - ls -la
 artifacts:
   base-directory: 'src/dist*'
