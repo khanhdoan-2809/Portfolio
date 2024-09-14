@@ -9,7 +9,7 @@ phases:
     commands:
       - echo Install Angular CLI and all node_modules 
       - cd $CODEBUILD_SRC_DIR/src
-      - npm install --legacy-peer-deps && npm install -g @angular/cli@13.2.4 --force
+      - npm install && npm install -g @angular/cli
   build:
     commands:
       - echo Build process started now
