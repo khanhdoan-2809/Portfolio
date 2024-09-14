@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+## =================== DESCRIPTION =================== ##
+Description: >-
+  AWS CloudFormation sample template
+  - Create a new CodeBuild project that gets the source code from GitHub and drops the build artifacts into S3 bucket that hosts the static website
+  - Create a new role for CodeBuild
+
+## =================== PARAMETERS =================== ##
+Parameters:
+    paramPersonalGitHubAccessToken:
+      Type: String
+      MinLength: 10
+      ConstraintDescription: Personal GitHub access token is missing
+      Description: Provide personal GitHub access token for CodeBuild to access GitHub repo
+    paramCodeBuildProjectName:
+      Description: Specify CodeBuild project name
+      Type: String
+      MinLength: 10
+      MaxLength: 255
+      Default: khanh-portfolio-codebuild-for-website-hosting
+    paramGitHubLink:
+      Type: String
+      Description: Provide your GitHub link with source code for static website
+      Default: https://github.com/khanhdoan-2809/Portfolio.git
+    paramBuildSpecRelativePathInGitHub:
+      Description: Provide a relative path for BuildSpec yaml file in source code for static website 
+      Type: String
+      Default: infrastructure/buildspec.yml
+    paramStaticWebsiteHostingBucketName:
+      Description: Specify an existing S3 bucket that hosts static website
+      Type: String
+      Default: khanh-portfolio-hosting-bucket-19-4
+    paramUniqueTagName:
+      Description: khanh-portfolio-hosting-bucket-19-4
+      Type: String
+      Default: static-website-hosting-to-s3
+
+## =================== RESOURCES =================== ##
+Resources:
+    codebuildProjectRole:
+      Type: AWS::IAM::Role
+      Properties:
+          RoleName: !Sub role-for-${paramCodeBuildProjectName}
+          Path: /
+          AssumeRolePolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 'sts:AssumeRole'
+                Effect: Allow
+                Principal:
+                  Service:
+                    - codebuild.amazonaws.com
+          Policies:
+              - PolicyName: !Sub policy-for-${paramCodeBuildProjectName}
+                PolicyDocument:
+                  Version: 2012-10-17
+                  Statement:
+                    - Action:
+                        - logs:CreateLogGroup
+                        - logs:CreateLogStream
+                        - logs:PutLogEvents
+                        - logs:DescribeLogStreams
+                      Effect: Allow
+                      Resource:
+                        - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${paramCodeBuildProjectName}-CloudWatchLogs
+                        - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${paramCodeBuildProjectName}-CloudWatchLogs:*    
+                    - Action:
+                        - s3:PutObject
+                        - s3:GetObject
+                        - s3:GetObjectVersion
+                        - s3:GetBucketAcl
+                        - s3:GetBucketLocation
+                      Effect: Allow
+                      Resource:
+                        - !Sub arn:aws:s3:::${paramStaticWebsiteHostingBucketName}
+                        - !Sub arn:aws:s3:::${paramStaticWebsiteHostingBucketName}/*  
+          Tags:
+            - Key: mastering-cloudformation
+              Value:  !Ref paramUniqueTagName            
+
+    myCodeBuildSourceCredential:
+      Type: AWS::CodeBuild::SourceCredential
+      Properties:
+        AuthType: PERSONAL_ACCESS_TOKEN
+        ServerType: GITHUB
+        Token: !Ref paramPersonalGitHubAccessToken     
+
+    # Create a new CodeBuild project that gets the source code from GitHub and drops the build artifacts into S3 bucket
+    codebuildProject:
+      Type: AWS::CodeBuild::Project
+      Properties:
+          Name: !Ref paramCodeBuildProjectName
+          Description: CodeBuild project for automatically build of static website hosted on s3
+          Source:
+              Type: GITHUB
+              Location: !Ref paramGitHubLink
+              GitCloneDepth: 1 # only get latest commit to clone
+              BuildSpec: !Ref paramBuildSpecRelativePathInGitHub 
+              Auth:
+                  Type: OAUTH
+                  Resource: !Ref myCodeBuildSourceCredential
+          Triggers:
+              Webhook: true # a webhook is a way for an application or service to send real-time data to another application or service
+              FilterGroups:
+                  - - Type: EVENT
+                      Pattern: PUSH
+                    - Type: HEAD_REF
+                      Pattern: ^refs/heads/main # for feature branches use: ^refs/heads/feature/.* | ^ is a regular expression
+          Environment: # use Ubuntu standard v7
+              Type: LINUX_CONTAINER
+              Image: aws/codebuild/standard:7.0
+              ComputeType: BUILD_GENERAL1_SMALL
+          ServiceRole: !Ref codebuildProjectRole
+          TimeoutInMinutes: 5
+          Artifacts: # drop the build artifacts of S3 bucket that hosts static website
+              Type: S3
+              Name: '/' # store the artifact in the root of the output bucket
+              Location: !Sub arn:aws:s3:::${paramStaticWebsiteHostingBucketName}
+              EncryptionDisabled: True #disable the encryption of artifacts in a build to see html pages
+          LogsConfig:
+            CloudWatchLogs:
+              Status: ENABLED
+              GroupName: !Sub ${paramCodeBuildProjectName}-cloud-watch-logs
+          Tags:
+            - Key: mastering-cloudformation
+              Value:  !Ref paramUniqueTagName
+
+## =================== OUTPUT =================== ##
+Outputs:
+  outputCodeBuildProject:
+    Description: CodeBuild project name
+    Value: !Ref codebuildProject

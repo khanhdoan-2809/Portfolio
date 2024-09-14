@@ -1,0 +1,27 @@
+version: 0.2
+env:
+  variables:
+    APP_ENV: 'prod'
+phases:
+  install:
+    runtime-versions:
+       nodejs: 18
+    commands:
+      - echo Install Angular CLI and all node_modules 
+      - cd $CODEBUILD_SRC_DIR/src
+      - npm install && npm install -g @angular/cli
+  build:
+    commands:
+      - echo Build process started now
+      - cd $CODEBUILD_SRC_DIR/src
+      - ng build --configuration=production
+  post_build:
+    commands:
+      - echo Build process finished, upload artifacts to S3 bucket
+      - cd dist/app-for-aws
+      - ls -la
+artifacts:
+  base-directory: 'src/dist*'
+  discard-paths: yes # make sure to put all the files in the root folder instead of subfolder.
+  files:
+    - '**/*'  # include all files and folders recursively from the base directory.
