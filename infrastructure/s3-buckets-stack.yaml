@@ -10,13 +10,11 @@ Parameters:
     paramStaticWebsiteHostingBucketName:
       Description: Specify a unique name for S3 bucket that will host static website
       Type: String
-      Default: khanh-portfolio-hosting-bucket
+      Default: khanh-portfolio-hosting-bucket-19-4
     paramUniqueTagName:
       Description: Specify a unique name for tag
       Type: String
-      Default: static-website-hosting-to-s3
-      AllowedPattern: "[\\x20-\\x7E]*"
-      ConstraintDescription: Must contain only ASCII characters
+      Default: static-website-hosting-to-s3-19-4
 
 ## =================== RESOURCES =================== ##
 Resources:
@@ -24,42 +22,45 @@ Resources:
       Type: 'AWS::S3::Bucket'
       DeletionPolicy: Delete
       Properties:
-          BucketName: !Ref paramStaticWebsiteHostingBucketName 
-          WebsiteConfiguration:
-              IndexDocument: index.html
-          OwnershipControls:
-               Rules:
-                    - ObjectOwnership: ObjectWriter
-          PublicAccessBlockConfiguration:
-               BlockPublicAcls: false
-               BlockPublicPolicy: false
-               IgnorePublicAcls: false
-               RestrictPublicBuckets: false
-      Tags:
-        - Key: s3-bucket-cloudformation
-          Value: !Ref paramUniqueTagName
+        BucketName: !Ref paramStaticWebsiteHostingBucketName 
+        WebsiteConfiguration:
+          IndexDocument: index.html
+        VersioningConfiguration:
+          Status: Enabled
+        OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
+        Tags:
+          - Key: s3-bucket-cloudformation
+            Value: !Ref paramUniqueTagName
 
-    staticWebsiteHostingBucket:
+    staticWebsiteHostingBucketPolicy:
       Type: 'AWS::S3::BucketPolicy'
       Properties:
-        Bucket: !!Ref staticWebsiteHostingBucket
+        Bucket: !Ref staticWebsiteHostingBucket
         PolicyDocument:
           Version: 2012-10-17
           Statement:
             - Sid: PublicReadGetBucketObjects
               Effect: Allow
               Principal: '*'
-              Action: 's3:GetObject'
+              Action: 
+                - 's3:GetObject'
               Resource: !Join
                 - ''
                 - - 'arn:aws:s3:::'
-                - !Ref staticWebsiteHostingBucket
-                - /*
+                  - !Ref staticWebsiteHostingBucket
+                  - /*
 
 ## =================== OUTPUT =================== ##
 Outputs:
-    ouputWebsiteURL:
-      Value: !GetAtt
-        - staticWebsiteHostingBucket
-        - WebsiteURL
-      Description: Static website URL
+  ouputWebsiteURL:
+    Value: !GetAtt
+      - staticWebsiteHostingBucket
+      - WebsiteURL
+    Description: Static website URL
