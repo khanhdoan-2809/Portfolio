@@ -1,0 +1,7 @@
+build project and upload to s3
+    ng build
+
+run local
+    ng serve
+
+turn off Block Public Access settings for this account in s3
